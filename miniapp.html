@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<title>BirrXChange</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg:        #0b0e11;
+    --surface:   #161a1f;
+    --card:      #1e2329;
+    --border:    #2b3139;
+    --gold:      #f0b90b;
+    --gold-dim:  #c99a08;
+    --green:     #03a66d;
+    --red:       #cf304a;
+    --text:      #eaecef;
+    --muted:     #848e9c;
+    --radius:    14px;
+    --font:      'Syne', sans-serif;
+    --mono:      'DM Mono', monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--font);overflow-x:hidden}
+
+  /* ── NAV ── */
+  .nav{
+    position:sticky;top:0;z-index:100;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:14px 18px;
+    background:var(--bg);
+    border-bottom:1px solid var(--border);
+  }
+  .logo{display:flex;align-items:center;gap:8px}
+  .logo-icon{
+    width:32px;height:32px;border-radius:8px;
+    background:var(--gold);
+    display:flex;align-items:center;justify-content:center;
+    font-size:16px;font-weight:800;color:#000;
+  }
+  .logo-text{font-size:17px;font-weight:800;letter-spacing:-.3px}
+  .logo-text span{color:var(--gold)}
+  .nav-badge{
+    background:var(--gold);color:#000;
+    font-size:10px;font-weight:700;
+    padding:3px 8px;border-radius:20px;letter-spacing:.5px;
+  }
+
+  /* ── PAGES ── */
+  .page{display:none;animation:fadeUp .35s ease}
+  .page.active{display:block}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+
+  /* ── BOTTOM NAV ── */
+  .bottom-nav{
+    position:fixed;bottom:0;left:0;right:0;z-index:100;
+    display:flex;
+    background:var(--surface);
+    border-top:1px solid var(--border);
+    padding-bottom:env(safe-area-inset-bottom);
+  }
+  .bnav-item{
+    flex:1;display:flex;flex-direction:column;align-items:center;
+    padding:10px 4px 8px;cursor:pointer;gap:4px;
+    font-size:10px;color:var(--muted);font-weight:600;letter-spacing:.3px;
+    transition:color .2s;
+  }
+  .bnav-item.active{color:var(--gold)}
+  .bnav-item svg{width:22px;height:22px}
+
+  /* ── SCROLL AREA ── */
+  .scroll{padding:16px 16px 90px}
+
+  /* ── HERO BANNER ── */
+  .hero{
+    background:linear-gradient(135deg,#1a1400 0%,#2a1f00 50%,#1a1400 100%);
+    border:1px solid #3d2e00;
+    border-radius:var(--radius);
+    padding:20px;margin-bottom:16px;position:relative;overflow:hidden;
+  }
+  .hero::before{
+    content:'';position:absolute;top:-30px;right:-30px;
+    width:120px;height:120px;border-radius:50%;
+    background:radial-gradient(circle,rgba(240,185,11,.25),transparent 70%);
+  }
+  .hero-tag{
+    display:inline-block;
+    background:rgba(240,185,11,.15);border:1px solid rgba(240,185,11,.3);
+    color:var(--gold);font-size:10px;font-weight:700;
+    padding:3px 10px;border-radius:20px;letter-spacing:.8px;margin-bottom:10px;
+  }
+  .hero h2{font-size:22px;font-weight:800;line-height:1.2;margin-bottom:6px}
+  .hero h2 span{color:var(--gold)}
+  .hero p{font-size:12px;color:var(--muted);line-height:1.5}
+
+  /* ── STATS ROW ── */
+  .stats-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px}
+  .stat-card{
+    background:var(--card);border:1px solid var(--border);
+    border-radius:var(--radius);padding:12px 10px;text-align:center;
+  }
+  .stat-val{font-size:15px;font-weight:700;font-family:var(--mono);color:var(--gold)}
+  .stat-lbl{font-size:10px;color:var(--muted);margin-top:2px;font-weight:600}
+
+  /* ── SECTION HEADER ── */
+  .sec-header{
+    display:flex;align-items:center;justify-content:space-between;
+    margin-bottom:10px;
+  }
+  .sec-title{font-size:14px;font-weight:700}
+  .sec-more{font-size:12px;color:var(--gold);cursor:pointer}
+
+  /* ── PRICE CARDS ── */
+  .price-row{display:flex;gap:10px;overflow-x:auto;padding-bottom:6px;margin-bottom:16px;scrollbar-width:none}
+  .price-row::-webkit-scrollbar{display:none}
+  .price-card{
+    min-width:130px;background:var(--card);border:1px solid var(--border);
+    border-radius:var(--radius);padding:14px 12px;flex-shrink:0;
+  }
+  .coin-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .coin-icon{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px}
+  .coin-name{font-size:13px;font-weight:700}
+  .coin-full{font-size:10px;color:var(--muted)}
+  .coin-price{font-size:16px;font-weight:700;font-family:var(--mono)}
+  .coin-change{font-size:11px;font-weight:600;margin-top:2px}
+  .up{color:var(--green)}.down{color:var(--red)}
+
+  /* ── ACTION BUTTONS ── */
+  .action-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+  .action-btn{
+    background:var(--card);border:1px solid var(--border);
+    border-radius:var(--radius);padding:16px;cursor:pointer;
+    display:flex;align-items:center;gap:12px;
+    transition:border-color .2s,transform .1s;
+  }
+  .action-btn:active{transform:scale(.97)}
+  .action-btn.primary{border-color:rgba(240,185,11,.4);background:rgba(240,185,11,.07)}
+  .action-icon{font-size:24px}
+  .action-label{font-size:13px;font-weight:700}
+  .action-sub{font-size:10px;color:var(--muted);margin-top:2px}
+
+  /* ── OFFERS LIST ── */
+  .offer-card{
+    background:var(--card);border:1px solid var(--border);
+    border-radius:var(--radius);padding:14px;margin-bottom:10px;
+  }
+  .offer-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+  .offer-user{display:flex;align-items:center;gap:8px}
+  .avatar{
+    width:34px;height:34px;border-radius:50%;
+    background:linear-gradient(135deg,var(--gold),#c99a08);
+    display:flex;align-items:center;justify-content:center;
+    font-size:14px;font-weight:800;color:#000;
+  }
+  .u-name{font-size:13px;font-weight:700}
+  .u-trades{font-size:10px;color:var(--muted)}
+  .offer-badge{
+    font-size:10px;font-weight:700;padding:4px 10px;border-radius:20px;
+  }
+  .badge-buy{background:rgba(3,166,109,.15);color:var(--green);border:1px solid rgba(3,166,109,.3)}
+  .badge-sell{background:rgba(207,48,74,.15);color:var(--red);border:1px solid rgba(207,48,74,.3)}
+  .offer-price{font-size:20px;font-weight:800;font-family:var(--mono);color:var(--gold)}
+  .offer-price span{font-size:11px;font-weight:500;color:var(--muted)}
+  .offer-limits{font-size:11px;color:var(--muted);margin-top:4px}
+  .offer-btn{
+    width:100%;margin-top:12px;padding:10px;border-radius:10px;
+    font-family:var(--font);font-size:13px;font-weight:700;cursor:pointer;border:none;
+    transition:opacity .2s;
+  }
+  .offer-btn:active{opacity:.8}
+  .btn-buy{background:var(--green);color:#fff}
+  .btn-sell{background:var(--red);color:#fff}
+
+  /* ── FORMS ── */
+  .form-card{
+    background:var(--card);border:1px solid var(--border);
+    border-radius:var(--radius);padding:20px;margin-bottom:14px;
+  }
+  .form-title{font-size:16px;font-weight:800;margin-bottom:4px}
+  .form-sub{font-size:12px;color:var(--muted);margin-bottom:18px;line-height:1.5}
+  .field{margin-bottom:14px}
+  .field label{font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:6px;letter-spacing:.3px}
+  .field input,.field select{
+    width:100%;background:var(--surface);border:1px solid var(--border);
+    border-radius:10px;padding:13px 14px;color:var(--text);
+    font-family:var(--font);font-size:14px;outline:none;
+    transition:border-color .2s;
+  }
+  .field input:focus,.field select:focus{border-color:var(--gold)}
+  .field input::placeholder{color:var(--muted)}
+  .field select option{background:var(--surface)}
+  .submit-btn{
+    width:100%;padding:15px;border-radius:12px;border:none;
+    background:var(--gold);color:#000;
+    font-family:var(--font);font-size:15px;font-weight:800;cursor:pointer;
+    transition:opacity .2s,transform .1s;letter-spacing:.3px;
+  }
+  .submit-btn:active{opacity:.85;transform:scale(.98)}
+  .submit-btn:disabled{opacity:.4;cursor:not-allowed}
+
+  /* ── KYC STEPS ── */
+  .kyc-steps{display:flex;gap:0;margin-bottom:20px}
+  .kyc-step{
+    flex:1;text-align:center;position:relative;
+  }
+  .kyc-step::after{
+    content:'';position:absolute;top:14px;left:50%;right:-50%;
+    height:2px;background:var(--border);z-index:0;
+  }
+  .kyc-step:last-child::after{display:none}
+  .step-dot{
+    width:28px;height:28px;border-radius:50%;
+    background:var(--border);
+    display:flex;align-items:center;justify-content:center;
+    font-size:12px;font-weight:700;margin:0 auto 6px;
+    position:relative;z-index:1;transition:background .3s;
+  }
+  .step-dot.done{background:var(--green);color:#fff}
+  .step-dot.active{background:var(--gold);color:#000}
+  .step-label{font-size:10px;color:var(--muted);font-weight:600}
+
+  /* ── DOC SELECTOR ── */
+  .doc-options{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px}
+  .doc-opt{
+    background:var(--surface);border:2px solid var(--border);
+    border-radius:12px;padding:14px 8px;text-align:center;cursor:pointer;
+    transition:border-color .2s,background .2s;
+  }
+  .doc-opt.selected{border-color:var(--gold);background:rgba(240,185,11,.08)}
+  .doc-opt .doc-icon{font-size:24px;margin-bottom:6px}
+  .doc-opt .doc-name{font-size:10px;font-weight:700;color:var(--muted)}
+  .doc-opt.selected .doc-name{color:var(--gold)}
+
+  /* ── UPLOAD ZONE ── */
+  .upload-zone{
+    border:2px dashed var(--border);border-radius:12px;
+    padding:28px 16px;text-align:center;cursor:pointer;
+    transition:border-color .2s;margin-bottom:12px;
+  }
+  .upload-zone:hover,.upload-zone.hover{border-color:var(--gold)}
+  .upload-icon{font-size:32px;margin-bottom:8px}
+  .upload-text{font-size:13px;font-weight:600;margin-bottom:4px}
+  .upload-hint{font-size:11px;color:var(--muted)}
+  .upload-zone input{display:none}
+
+  /* ── TRANSFER ── */
+  .balance-chip{
+    background:rgba(240,185,11,.1);border:1px solid rgba(240,185,11,.25);
+    border-radius:10px;padding:12px 16px;
+    display:flex;justify-content:space-between;align-items:center;
+    margin-bottom:16px;
+  }
+  .bal-lbl{font-size:11px;color:var(--muted);font-weight:600}
+  .bal-val{font-size:18px;font-weight:800;font-family:var(--mono);color:var(--gold)}
+
+  /* ── PROFILE ── */
+  .profile-header{
+    background:var(--card);border:1px solid var(--border);
+    border-radius:var(--radius);padding:20px;
+    text-align:center;margin-bottom:14px;
+  }
+  .profile-avatar{
+    width:70px;height:70px;border-radius:50%;
+    background:linear-gradient(135deg,var(--gold),#c99a08);
+    display:flex;align-items:center;justify-content:center;
+    font-size:28px;font-weight:800;color:#000;
+    margin:0 auto 12px;
+  }
+  .profile-name{font-size:18px;font-weight:800;margin-bottom:4px}
+  .profile-email{font-size:12px;color:var(--muted)}
+  .kyc-status{
+    display:inline-flex;align-items:center;gap:5px;
+    margin-top:10px;padding:5px 14px;border-radius:20px;font-size:11px;font-weight:700;
+  }
+  .kyc-pending{background:rgba(240,185,11,.15);color:var(--gold);border:1px solid rgba(240,185,11,.3)}
+  .kyc-verified{background:rgba(3,166,109,.15);color:var(--green);border:1px solid rgba(3,166,109,.3)}
+  .menu-item{
+    display:flex;align-items:center;justify-content:space-between;
+    background:var(--card);border:1px solid var(--border);
+    border-radius:12px;padding:14px 16px;margin-bottom:8px;cursor:pointer;
+  }
+  .menu-left{display:flex;align-items:center;gap:12px;font-size:14px;font-weight:600}
+  .menu-arrow{color:var(--muted);font-size:16px}
+
+  /* ── TOAST ── */
+  .toast{
+    position:fixed;top:80px;left:50%;transform:translateX(-50%) translateY(-20px);
+    background:var(--card);border:1px solid var(--gold);color:var(--text);
+    padding:12px 20px;border-radius:12px;font-size:13px;font-weight:600;
+    z-index:999;opacity:0;transition:all .3s;white-space:nowrap;
+    pointer-events:none;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  /* ── LOADING ── */
+  .spinner{
+    width:20px;height:20px;border:2px solid var(--border);
+    border-top-color:var(--gold);border-radius:50%;
+    animation:spin .8s linear infinite;display:inline-block;vertical-align:middle;
+  }
+  @keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="logo">
+    <div class="logo-icon">₿</div>
+    <div class="logo-text">Birr<span>X</span>Change</div>
+  </div>
+  <div class="nav-badge">P2P</div>
+</nav>
+
+<!-- PAGES -->
+
+<!-- HOME -->
+<div class="page active" id="page-home">
+  <div class="scroll">
+    <div class="hero">
+      <div class="hero-tag">🇪🇹 ETHIOPIA'S #1 P2P</div>
+      <h2>Trade Crypto<br/>in <span>ETB</span> Instantly</h2>
+      <p>Fast • Secure • Escrow Protected</p>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-val">12.4K</div>
+        <div class="stat-lbl">Traders</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val">99.2%</div>
+        <div class="stat-lbl">Success</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val">~2min</div>
+        <div class="stat-lbl">Release</div>
+      </div>
+    </div>
+
+    <div class="sec-header">
+      <div class="sec-title">📈 Live Prices</div>
+      <div class="sec-more">See all →</div>
+    </div>
+    <div class="price-row">
+      <div class="price-card">
+        <div class="coin-row">
+          <div class="coin-icon" style="background:#f7931a22">₿</div>
+          <div><div class="coin-name">BTC</div><div class="coin-full">Bitcoin</div></div>
+        </div>
+        <div class="coin-price">5,812,400</div>
+        <div class="coin-change up">▲ +2.34%</div>
+      </div>
+      <div class="price-card">
+        <div class="coin-row">
+          <div class="coin-icon" style="background:#627eea22">Ξ</div>
+          <div><div class="coin-name">ETH</div><div class="coin-full">Ethereum</div></div>
+        </div>
+        <div class="coin-price">312,500</div>
+        <div class="coin-change up">▲ +1.87%</div>
+      </div>
+      <div class="price-card">
+        <div class="coin-row">
+          <div class="coin-icon" style="background:#26a17b22">₮</div>
+          <div><div class="coin-name">USDT</div><div class="coin-full">Tether</div></div>
+        </div>
+        <div class="coin-price">57.40</div>
+        <div class="coin-change down">▼ -0.12%</div>
+      </div>
+      <div class="price-card">
+        <div class="coin-row">
+          <div class="coin-icon" style="background:#f0b90b22">B</div>
+          <div><div class="coin-name">BNB</div><div class="coin-full">BNB Chain</div></div>
+        </div>
+        <div class="coin-price">24,800</div>
+        <div class="coin-change up">▲ +0.94%</div>
+      </div>
+    </div>
+
+    <div class="action-grid">
+      <div class="action-btn primary" onclick="goPage('buy')">
+        <div class="action-icon">💱</div>
+        <div><div class="action-label">Buy Crypto</div><div class="action-sub">Best rates</div></div>
+      </div>
+      <div class="action-btn" onclick="goPage('sell')">
+        <div class="action-icon">💰</div>
+        <div><div class="action-label">Sell Crypto</div><div class="action-sub">Instant ETB</div></div>
+      </div>
+      <div class="action-btn" onclick="goPage('transfer')">
+        <div class="action-icon">🔄</div>
+        <div><div class="action-label">Transfer</div><div class="action-sub">Zero fees</div></div>
+      </div>
+      <div class="action-btn" onclick="goPage('profile')">
+        <div class="action-icon">👤</div>
+        <div><div class="action-label">Profile</div><div class="action-sub">KYC & settings</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- BUY -->
+<div class="page" id="page-buy">
+  <div class="scroll">
+    <div class="form-card" style="padding:14px">
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <button class="submit-btn" style="padding:10px;font-size:13px" onclick="setTab('buy')">Buy</button>
+        <button class="submit-btn" style="padding:10px;font-size:13px;background:var(--surface);color:var(--muted);border:1px solid var(--border)" onclick="goPage('sell');setTab('sell')">Sell</button>
+      </div>
+      <div class="field">
+        <label>COIN</label>
+        <select><option>USDT</option><option>BTC</option><option>ETH</option><option>BNB</option></select>
+      </div>
+      <div class="field">
+        <label>AMOUNT (ETB)</label>
+        <input type="number" placeholder="Min 500 ETB"/>
+      </div>
+    </div>
+
+    <div class="sec-header">
+      <div class="sec-title">🟢 Buy Offers</div>
+      <div class="sec-more">Filter ▾</div>
+    </div>
+
+    <!-- Offer cards -->
+    <div class="offer-card">
+      <div class="offer-top">
+        <div class="offer-user">
+          <div class="avatar">A</div>
+          <div><div class="u-name">Abebe T.</div><div class="u-trades">⭐ 4.9 · 847 trades</div></div>
+        </div>
+        <div class="offer-badge badge-buy">BUY</div>
+      </div>
+      <div class="offer-price">57.40 <span>ETB/USDT</span></div>
+      <div class="offer-limits">Limit: 500 – 50,000 ETB · TelebirR · CBE</div>
+      <button class="offer-btn btn-buy" onclick="showToast('✅ Order opened! Complete payment within 15 min.')">Buy USDT</button>
+    </div>
+    <div class="offer-card">
+      <div class="offer-top">
+        <div class="offer-user">
+          <div class="avatar" style="background:linear-gradient(135deg,#03a66d,#027a50)">S</div>
+          <div><div class="u-name">Sara M.</div><div class="u-trades">⭐ 5.0 · 1,203 trades</div></div>
+        </div>
+        <div class="offer-badge badge-buy">BUY</div>
+      </div>
+      <div class="offer-price">57.35 <span>ETB/USDT</span></div>
+      <div class="offer-limits">Limit: 1,000 – 100,000 ETB · Bank Transfer</div>
+      <button class="offer-btn btn-buy" onclick="showToast('✅ Order opened! Complete payment within 15 min.')">Buy USDT</button>
+    </div>
+    <div class="offer-card">
+      <div class="offer-top">
+        <div class="offer-user">
+          <div class="avatar" style="background:linear-gradient(135deg,#627eea,#3d5af1)">D</div>
+          <div><div class="u-name">Dawit K.</div><div class="u-trades">⭐ 4.8 · 512 trades</div></div>
+        </div>
+        <div class="offer-badge badge-buy">BUY</div>
+      </div>
+      <div class="offer-price">57.50 <span>ETB/USDT</span></div>
+      <div class="offer-limits">Limit: 200 – 20,000 ETB · M-Pesa · TelebirR</div>
+      <button class="offer-btn btn-buy" onclick="showToast('✅ Order opened! Complete payment within 15 min.')">Buy USDT</button>
+    </div>
+  </div>
+</div>
+
+<!-- SELL -->
+<div class="page" id="page-sell">
+  <div class="scroll">
+    <div class="form-card" style="padding:14px">
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <button class="submit-btn" style="padding:10px;font-size:13px;background:var(--surface);color:var(--muted);border:1px solid var(--border)" onclick="goPage('buy')">Buy</button>
+        <button class="submit-btn" style="padding:10px;font-size:13px">Sell</button>
+      </div>
+      <div class="field">
+        <label>COIN</label>
+        <select><option>USDT</option><option>BTC</option><option>ETH</option><option>BNB</option></select>
+      </div>
+      <div class="field">
+        <label>AMOUNT (USDT)</label>
+        <input type="number" placeholder="Min 10 USDT"/>
+      </div>
+    </div>
+
+    <div class="sec-header">
+      <div class="sec-title">🔴 Sell Offers</div>
+      <div class="sec-more">Filter ▾</div>
+    </div>
+    <div class="offer-card">
+      <div class="offer-top">
+        <div class="offer-user">
+          <div class="avatar" style="background:linear-gradient(135deg,#cf304a,#9e1f38)">M</div>
+          <div><div class="u-name">Mikias H.</div><div class="u-trades">⭐ 4.7 · 320 trades</div></div>
+        </div>
+        <div class="offer-badge badge-sell">SELL</div>
+      </div>
+      <div class="offer-price">57.20 <span>ETB/USDT</span></div>
+      <div class="offer-limits">Limit: 500 – 30,000 ETB · CBE · Dashen</div>
+      <button class="offer-btn btn-sell" onclick="showToast('✅ Sell order placed! Await buyer payment.')">Sell USDT</button>
+    </div>
+    <div class="offer-card">
+      <div class="offer-top">
+        <div class="offer-user">
+          <div class="avatar" style="background:linear-gradient(135deg,#f0b90b,#c99a08)">H</div>
+          <div><div class="u-name">Hanan B.</div><div class="u-trades">⭐ 5.0 · 2,041 trades</div></div>
+        </div>
+        <div class="offer-badge badge-sell">SELL</div>
+      </div>
+      <div class="offer-price">57.15 <span>ETB/USDT</span></div>
+      <div class="offer-limits">Limit: 1,000 – 200,000 ETB · All methods</div>
+      <button class="offer-btn btn-sell" onclick="showToast('✅ Sell order placed! Await buyer payment.')">Sell USDT</button>
+    </div>
+  </div>
+</div>
+
+<!-- TRANSFER -->
+<div class="page" id="page-transfer">
+  <div class="scroll">
+    <div class="balance-chip">
+      <div><div class="bal-lbl">AVAILABLE BALANCE</div><div class="bal-val">0.00 USDT</div></div>
+      <div style="font-size:24px">💼</div>
+    </div>
+
+    <div class="form-card">
+      <div class="form-title">🔄 Transfer Crypto</div>
+      <div class="form-sub">Send to any BirrXChange user instantly with zero internal fees.</div>
+
+      <div class="field">
+        <label>ASSET</label>
+        <select><option>USDT</option><option>BTC</option><option>ETH</option><option>BNB</option></select>
+      </div>
+      <div class="field">
+        <label>RECIPIENT USERNAME OR UID</label>
+        <input type="text" placeholder="@username or UID"/>
+      </div>
+      <div class="field">
+        <label>AMOUNT</label>
+        <input type="number" placeholder="0.00"/>
+      </div>
+      <div class="field">
+        <label>NOTE (OPTIONAL)</label>
+        <input type="text" placeholder="What's this for?"/>
+      </div>
+      <button class="submit-btn" onclick="showToast('🔄 Transfer submitted successfully!')">Send Now</button>
+    </div>
+  </div>
+</div>
+
+<!-- REGISTER -->
+<div class="page" id="page-register">
+  <div class="scroll">
+    <div class="form-card">
+      <div class="form-title">👋 Create Account</div>
+      <div class="form-sub">Join 12,400+ traders on Ethiopia's #1 P2P platform.</div>
+
+      <div class="field">
+        <label>FULL NAME</label>
+        <input type="text" placeholder="Abebe Kebede"/>
+      </div>
+      <div class="field">
+        <label>EMAIL ADDRESS</label>
+        <input type="email" placeholder="you@example.com"/>
+      </div>
+      <div class="field">
+        <label>PHONE NUMBER</label>
+        <input type="tel" placeholder="+251 9XX XXX XXXX"/>
+      </div>
+      <div class="field">
+        <label>PASSWORD</label>
+        <input type="password" placeholder="Min 8 characters"/>
+      </div>
+      <div class="field">
+        <label>CONFIRM PASSWORD</label>
+        <input type="password" placeholder="Repeat password"/>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:16px;line-height:1.5">
+        By registering you agree to our <span style="color:var(--gold)">Terms of Service</span> and <span style="color:var(--gold)">Privacy Policy</span>.
+      </div>
+      <button class="submit-btn" onclick="handleRegister()">Create Account →</button>
+    </div>
+    <div style="text-align:center;font-size:13px;color:var(--muted);padding-bottom:20px">
+      Already have an account? <span style="color:var(--gold);cursor:pointer" onclick="showToast('Login coming soon!')">Sign In</span>
+    </div>
+  </div>
+</div>
+
+<!-- KYC -->
+<div class="page" id="page-kyc">
+  <div class="scroll">
+    <div class="form-card">
+      <div class="form-title">🔐 KYC Verification</div>
+      <div class="form-sub">Verify your identity to unlock unlimited trading. Takes ~2 minutes.</div>
+
+      <!-- Steps -->
+      <div class="kyc-steps" id="kyc-steps">
+        <div class="kyc-step">
+          <div class="step-dot active" id="dot-1">1</div>
+          <div class="step-label">Info</div>
+        </div>
+        <div class="kyc-step">
+          <div class="step-dot" id="dot-2">2</div>
+          <div class="step-label">Document</div>
+        </div>
+        <div class="kyc-step">
+          <div class="step-dot" id="dot-3">3</div>
+          <div class="step-label">Selfie</div>
+        </div>
+      </div>
+
+      <!-- Step 1: Personal Info -->
+      <div id="kyc-step1">
+        <div class="field">
+          <label>FULL LEGAL NAME</label>
+          <input type="text" placeholder="As on your ID document"/>
+        </div>
+        <div class="field">
+          <label>DATE OF BIRTH</label>
+          <input type="date"/>
+        </div>
+        <div class="field">
+          <label>NATIONALITY</label>
+          <select>
+            <option>Ethiopian</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>ADDRESS</label>
+          <input type="text" placeholder="City, Region"/>
+        </div>
+        <button class="submit-btn" onclick="kycNext(2)">Continue →</button>
+      </div>
+
+      <!-- Step 2: Document -->
+      <div id="kyc-step2" style="display:none">
+        <div style="font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.3px;margin-bottom:10px">SELECT DOCUMENT TYPE</div>
+        <div class="doc-options">
+          <div class="doc-opt selected" onclick="selectDoc(this,'passport')">
+            <div class="doc-icon">🛂</div>
+            <div class="doc-name">Passport</div>
+          </div>
+          <div class="doc-opt" onclick="selectDoc(this,'nationalid')">
+            <div class="doc-icon">🪪</div>
+            <div class="doc-name">National ID</div>
+          </div>
+          <div class="doc-opt" onclick="selectDoc(this,'license')">
+            <div class="doc-icon">🚗</div>
+            <div class="doc-name">Driving License</div>
+          </div>
+        </div>
+
+        <div class="upload-zone" onclick="this.querySelector('input').click()" id="front-zone">
+          <input type="file" accept="image/*" onchange="handleUpload(this,'front-zone','📄 Front uploaded!')"/>
+          <div class="upload-icon">📄</div>
+          <div class="upload-text">Upload Front Side</div>
+          <div class="upload-hint">JPG, PNG or PDF · Max 5MB</div>
+        </div>
+
+        <div class="upload-zone" onclick="this.querySelector('input').click()" id="back-zone">
+          <input type="file" accept="image/*" onchange="handleUpload(this,'back-zone','📄 Back uploaded!')"/>
+          <div class="upload-icon">📋</div>
+          <div class="upload-text">Upload Back Side</div>
+          <div class="upload-hint">JPG, PNG or PDF · Max 5MB</div>
+        </div>
+
+        <button class="submit-btn" onclick="kycNext(3)">Continue →</button>
+      </div>
+
+      <!-- Step 3: Selfie -->
+      <div id="kyc-step3" style="display:none">
+        <div style="text-align:center;padding:10px 0 16px">
+          <div style="font-size:48px;margin-bottom:8px">🤳</div>
+          <div style="font-size:14px;font-weight:700;margin-bottom:6px">Take a Selfie</div>
+          <div style="font-size:12px;color:var(--muted);line-height:1.5">
+            Hold your ID next to your face.<br/>Make sure your face & document are clearly visible.
+          </div>
+        </div>
+        <div class="upload-zone" onclick="this.querySelector('input').click()" id="selfie-zone">
+          <input type="file" accept="image/*" capture="user" onchange="handleUpload(this,'selfie-zone','🤳 Selfie uploaded!')"/>
+          <div class="upload-icon">📸</div>
+          <div class="upload-text">Take or Upload Selfie</div>
+          <div class="upload-hint">Front-facing camera recommended</div>
+        </div>
+        <button class="submit-btn" onclick="submitKYC()">Submit for Review →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PROFILE -->
+<div class="page" id="page-profile">
+  <div class="scroll">
+    <div class="profile-header">
+      <div class="profile-avatar">A</div>
+      <div class="profile-name">Your Name</div>
+      <div class="profile-email">your@email.com</div>
+      <div class="kyc-status kyc-pending">⏳ KYC Pending</div>
+    </div>
+
+    <div class="menu-item" onclick="goPage('kyc')">
+      <div class="menu-left"><span>🔐</span> KYC Verification</div>
+      <div class="menu-arrow">›</div>
+    </div>
+    <div class="menu-item" onclick="showToast('Security settings coming soon!')">
+      <div class="menu-left"><span>🛡️</span> Security</div>
+      <div class="menu-arrow">›</div>
+    </div>
+    <div class="menu-item" onclick="showToast('Payment methods coming soon!')">
+      <div class="menu-left"><span>💳</span> Payment Methods</div>
+      <div class="menu-arrow">›</div>
+    </div>
+    <div class="menu-item" onclick="showToast('Order history coming soon!')">
+      <div class="menu-left"><span>📋</span> Order History</div>
+      <div class="menu-arrow">›</div>
+    </div>
+    <div class="menu-item" onclick="showToast('Support: @BirrXChangeSupport')">
+      <div class="menu-left"><span>💬</span> Support</div>
+      <div class="menu-arrow">›</div>
+    </div>
+    <div class="menu-item" onclick="goPage('register')">
+      <div class="menu-left" style="color:var(--gold)"><span>📋</span> Complete Registration</div>
+      <div class="menu-arrow">›</div>
+    </div>
+  </div>
+</div>
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+  <div class="bnav-item active" id="bnav-home" onclick="goPage('home')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    Home
+  </div>
+  <div class="bnav-item" id="bnav-buy" onclick="goPage('buy')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 8 12 12 14.5 14.5"/></svg>
+    Trade
+  </div>
+  <div class="bnav-item" id="bnav-transfer" onclick="goPage('transfer')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 014-4h14M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>
+    Transfer
+  </div>
+  <div class="bnav-item" id="bnav-profile" onclick="goPage('profile')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    Profile
+  </div>
+</nav>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+  // Init Telegram Web App
+  if (window.Telegram && window.Telegram.WebApp) {
+    Telegram.WebApp.ready();
+    Telegram.WebApp.expand();
+    Telegram.WebApp.setHeaderColor('#0b0e11');
+    Telegram.WebApp.setBackgroundColor('#0b0e11');
+  }
+
+  // Page routing
+  const pages = ['home','buy','sell','transfer','register','kyc','profile'];
+  const bnavMap = {home:'bnav-home',buy:'bnav-buy',sell:'bnav-buy',transfer:'bnav-transfer',profile:'bnav-profile'};
+
+  function goPage(name) {
+    pages.forEach(p => {
+      document.getElementById('page-'+p).classList.remove('active');
+    });
+    document.getElementById('page-'+name).classList.add('active');
+
+    // Update bottom nav
+    document.querySelectorAll('.bnav-item').forEach(el => el.classList.remove('active'));
+    const bnavId = bnavMap[name];
+    if (bnavId) document.getElementById(bnavId).classList.add('active');
+
+    window.scrollTo(0,0);
+  }
+
+  // Check URL params
+  const params = new URLSearchParams(window.location.search);
+  const pageParam = params.get('page');
+  if (pageParam && pages.includes(pageParam)) goPage(pageParam);
+
+  // Toast
+  let toastTimer;
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+  }
+
+  // Register
+  function handleRegister() {
+    showToast('✅ Account created! Please verify your email.');
+    setTimeout(() => goPage('kyc'), 1500);
+  }
+
+  // KYC steps
+  function kycNext(step) {
+    for (let i=1;i<=3;i++) document.getElementById('kyc-step'+i).style.display='none';
+    document.getElementById('kyc-step'+step).style.display='block';
+    for (let i=1;i<=3;i++) {
+      const dot = document.getElementById('dot-'+i);
+      dot.classList.remove('active','done');
+      if (i < step) dot.classList.add('done'), dot.textContent='✓';
+      else if (i === step) dot.classList.add('active');
+      else dot.textContent = i;
+    }
+  }
+
+  function selectDoc(el, type) {
+    document.querySelectorAll('.doc-opt').forEach(d => d.classList.remove('selected'));
+    el.classList.add('selected');
+  }
+
+  function handleUpload(input, zoneId, msg) {
+    if (input.files && input.files[0]) {
+      const zone = document.getElementById(zoneId);
+      zone.querySelector('.upload-icon').textContent = '✅';
+      zone.querySelector('.upload-text').textContent = input.files[0].name;
+      zone.style.borderColor = 'var(--green)';
+      showToast(msg);
+    }
+  }
+
+  function submitKYC() {
+    showToast('🔐 KYC submitted! Review takes 1-24 hours.');
+    setTimeout(() => goPage('profile'), 2000);
+  }
+</script>
+</body>
+</html>
